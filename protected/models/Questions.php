@@ -16,6 +16,7 @@
  */
 class Questions extends CActiveRecord
 {
+	public $num;
 	/**
 	 * Returns the static model of the specified AR class.
 	 * @return Questions the static model class
@@ -47,7 +48,7 @@ class Questions extends CActiveRecord
 			array('add_time, content', 'safe'),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('id, kid, nickname, email, add_time, content, status, is_show, same_ask', 'safe', 'on'=>'search'),
+			array('id, kid, nickname, email, add_time, content, status, is_show, same_ask, num', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -88,13 +89,10 @@ class Questions extends CActiveRecord
 	public function search($limit)
 	{
 		$criteria=new CDbCriteria;
-		$criteria->alias = 'q';
-		$criteria->select = "q.*,count(answer.id) as num";
-		$criteria->join = 'LEFT JOIN tbl_answer answer on q.id=answer.qid';
-		$criteria->compare('q.kid',$this->kid,false);
-		$criteria->compare('q.is_show',1,false);
-		$criteria->compare('q.status',1);
-		$criteria->group = 'answer.qid';
+		$criteria->select = "t.*,(select count(*) from tbl_answer where qid=t.id) as num";
+		$criteria->compare('t.kid',$this->kid,false);
+		$criteria->compare('t.is_show',1,false);
+		$criteria->compare('t.status',1);
 		$criteria->order = 'num desc';
 		
 		return new CActiveDataProvider($this, array(
@@ -108,8 +106,9 @@ class Questions extends CActiveRecord
 	public function getwait($limit){
 		$criteria=new CDbCriteria;
 		$criteria->compare('kid',$this->kid,false);
-		$criteria->addCondition("status != 1");
 		$criteria->compare('is_show',1);
+		$criteria->order = 'add_time asc';
+		$criteria->addInCondition('status', array(NULL));
 		
 		return new CActiveDataProvider($this, array(
 			'criteria'=>$criteria,
